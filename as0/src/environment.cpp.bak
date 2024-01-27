@@ -1,0 +1,40 @@
+#include <iostream> 
+#include <concepts>
+
+template<typename T>
+concept is_integer = std::is_same_v<T, int>; 
+
+// concept
+
+template<std::floating_point T>
+struct Lambda {
+    int x = 0;
+    void operator() (T t) const {
+        std::cout << "Hello Lambda" << std::endl;
+    }
+};
+
+
+int main(){
+
+std::cout << "hello 384209374093247320" << std::endl;
+Lambda l;
+l();
+int x = 5;
+
+//Allen turing; lambda calculus -> alonzo church
+//Lambda: Function without name
+//Box called capter(?)
+//Can capture variables from the outside
+//Passing with ampersand allows us to edit the pointed to memory address
+
+auto lambda = [l, x]() {
+    std::cout << "Hello lambda 2 " << std::endl;
+    l();
+};
+lambda();
+
+
+return 0;
+
+}
