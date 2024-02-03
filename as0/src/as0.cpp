@@ -5,8 +5,10 @@ int main(){
     raylib::Window window(500, 500, "CS381 - Assignment 0");
     raylib::Text text;
     bool flag = false, flag2 = false;
-    float animate = 80;
+    float animate = 40;
     int windHeight = 0, windWidth = 0;
+
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
     while(!window.ShouldClose()) { 
         window.BeginDrawing();
@@ -18,13 +20,13 @@ int main(){
             
              if(flag2 == false){
                 window.ClearBackground(RAYWHITE);
-                text.Draw("School appropriate", (windWidth/2 - animate), (windHeight/2 - 20), 20, raylib::Color::Black());
+                text.Draw("Black", (windWidth/2 - animate), (windHeight/2 - 20), 20, raylib::Color::Black());
                 //flag = true;
             }
 
              else if(flag2 == true){
                 window.ClearBackground(BLACK);
-                text.Draw("School appropriate", (windWidth/2 - animate), (windHeight/2 - 20), 20, raylib::Color::White());
+                text.Draw("White", (windWidth/2 - animate), (windHeight/2 - 20), 20, raylib::Color::White());
                 //flag = false;
             }
 
