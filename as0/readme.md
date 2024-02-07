@@ -1,13 +1,19 @@
 1. To fetch the git submodule, run the linux command: 
 
-- git submodule add https://github.com/Whitaker-Aaron/CS381_AaronWhitaker/tree/4bd5ba2544c34ed56cec17d92eb79735985e1aeb/as0
+- git clone https://github.com/Whitaker-Aaron/CS381_AaronWhitaker.git
 
+    then cd into the as0 folder.
+- cd as0
 
 2. To compile the code, empty out the build folder:
 
 - rm -rf build
 
-    if it is not empty already. Then run the cmake command: 
+    and remake it. 
+    
+- mkdir build 
+
+     Then run the cmake command: 
 
     - cmake ..
 
@@ -21,3 +27,12 @@
 
     to run the executable, and the small animation should play in the window.
    Since there are no controls for the assignment, these are not applicable. 
+
+Block of commands:
+
+- git clone https://github.com/Whitaker-Aaron/CS381_AaronWhitaker.git
+- cd as0  
+- rm -rf build    
+- cmake ..
+- make
+- ./as0
