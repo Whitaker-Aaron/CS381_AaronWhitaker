@@ -182,17 +182,17 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named as0
+# Target rules for targets named as1
 
 # Build rule for target.
-as0: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 as0
-.PHONY : as0
+as1: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 as1
+.PHONY : as1
 
 # fast build rule for target.
-as0/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/as0.dir/build.make CMakeFiles/as0.dir/build
-.PHONY : as0/fast
+as1/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/as1.dir/build.make CMakeFiles/as1.dir/build
+.PHONY : as1/fast
 
 #=============================================================================
 # Target rules for targets named raylib
@@ -277,7 +277,7 @@ src/as1.o: src/as1.cpp.o
 
 # target to build an object file
 src/as1.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/as0.dir/build.make CMakeFiles/as0.dir/src/as1.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/as1.dir/build.make CMakeFiles/as1.dir/src/as1.cpp.o
 .PHONY : src/as1.cpp.o
 
 src/as1.i: src/as1.cpp.i
@@ -285,7 +285,7 @@ src/as1.i: src/as1.cpp.i
 
 # target to preprocess a source file
 src/as1.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/as0.dir/build.make CMakeFiles/as0.dir/src/as1.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/as1.dir/build.make CMakeFiles/as1.dir/src/as1.cpp.i
 .PHONY : src/as1.cpp.i
 
 src/as1.s: src/as1.cpp.s
@@ -293,7 +293,7 @@ src/as1.s: src/as1.cpp.s
 
 # target to generate assembly for a file
 src/as1.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/as0.dir/build.make CMakeFiles/as0.dir/src/as1.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/as1.dir/build.make CMakeFiles/as1.dir/src/as1.cpp.s
 .PHONY : src/as1.cpp.s
 
 # Help Target
@@ -311,7 +311,7 @@ help:
 	@echo "... package_source"
 	@echo "... rebuild_cache"
 	@echo "... update_mappings"
-	@echo "... as0"
+	@echo "... as1"
 	@echo "... buffered-raylib"
 	@echo "... glfw"
 	@echo "... libfastsignals"

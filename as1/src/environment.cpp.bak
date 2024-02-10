@@ -239,3 +239,64 @@ lambda();
 return 0;
 
 }*/
+
+
+//Writing Code using Lambda
+//template<typename T>
+//concept Transformer = requires(T t, raylib::Transform m){
+//  {t.operator()(m) } -> std::convertible_to<raylib::Transform>;    
+//};
+
+//Requires clause will become true or false at compile time.
+//Returns a raylib transform.
+
+//Essentially, some object that can be used as a function, and takes a transform in, and returns a transform.
+//
+// Every game engine is going to look approximately the same
+// Some main function that is going to do some setup,
+// Some loop, while(true)
+// renderFrame()
+// cleanup()
+
+// Using c++ ver. of raylib, we can see that we have a destructor called unload.
+// Behind the scenes, defaultCube.Unload() gets called automatically by the destructor.
+// Cleanup happens implicitly. 
+
+// Rendering position we need to incrememt speed. 
+// position += speed. 
+// position = position + speed
+
+// delta time helps keep varying fps in sync. 
+// We don't know when the current frame will be displayed
+// Therefore, we reference the last frame and the one preceding it.
+// one frame delay.
+// FixedUpdate() happens a fixed amount of times every time its called.
+// If all frames are spaced apart evenly, we don't have to use deltatime. 
+
+// position, speed, acceleration 
+// speed += acceleration*deltaTime
+// portion acceleration in half for both before and after the translation.(?)
+
+// With a higher frame rate; the speed is calculated more frequently.
+
+// Start with a position: Vector3 position = {0, 0, 0};
+// position += raylib::Vector3::Right() * spped * window.GetFrameTime() , where GetFrameTime() returns times in second for each frame draw *basically our delta time.
+// Architectures: ad hoc (no architecture?), object oriented entity component, data oriented entity component system, 
+//                monolithic entity, and the node tree.
+
+// global esc variables for Car: position, speed.
+// This architecture doesn't scale well with increasing amount of entities
+// Obvious answer to make list of global variables.
+//  entities (game objects, actors, nodes)
+//  to each of these entities, we are going to attach a component.
+//  each component can be drawn, updated, initialized...
+//  This is the object oriented entity component system.
+
+// Problem with CPU architecture. 
+//      -Accessing memory is slow. 
+//      -Cannot only use what the CPU provides. 
+//      -CPUs have cache, cahce line basically big block.
+
+// List of positions, list of speeds, etc.. 
+// Instead of entities, we have an index into these list of things. 
+// That way the cache line contains 7 position values for example.
