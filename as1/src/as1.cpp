@@ -19,32 +19,32 @@ void DrawBoundedModel(raylib::Model& model, Transformer auto transformer, float 
 
 int main(){
 
+raylib::Transform transform = raylib::Transform::Identity();
+
+
 raylib::Window window(1000, 700, "CS381 - Assignment 1");
 int windHeight = 0, windWidth = 0;
 
-//raylib::Model model = LoadModel("../meshes/CargoG_HOSBrigadoon.glb");
-
-raylib::Model modelDiscordIcon = LoadModel("../meshes/3d icon discord.glb");
 raylib::Model modelBread = LoadModel("../meshes/bread.glb");
 modelBread.transform = raylib::Transform(modelBread.transform).Scale(30,30,30);
 modelBread.transform = raylib::Transform(modelBread.transform).RotateXYZ(30,30,30);
 
-raylib::Model modelCargoG = LoadModel("../meshes/CargoG_HOSBrigadoon.glb");
-modelCargoG.transform = raylib::Transform(modelCargoG.transform).Scale(0.02,0.02,0.02);
+raylib::Model modelPolyP = LoadModel("../meshes/PolyPlane.glb");
 
+/*
 raylib::Model modelShipL = LoadModel("../meshes/ShipLarge.glb");
 raylib::Model modelOilT = LoadModel("../meshes/OilTanker.glb");
 raylib::Model modelOrientE = LoadModel("../meshes/OrientExplorer.glb");
-raylib::Model modelPolyP = LoadModel("../meshes/PolyPlane.glb");
+*/
 
-raylib::Model modelPolyP2 = LoadModel("../meshes/PolyPlane.glb");
-modelPolyP2.transform = raylib::Transform(modelPolyP2.transform).RotateXYZ(raylib::Degree(180),0 ,raylib::Degree(180));
-modelPolyP2.transform = raylib::Transform(modelPolyP2.transform).Scale(1,-1,1);
 
-raylib::Model modelSmitH = LoadModel("../meshes/SmitHouston_Tug.glb");
+
+//raylib::Model modelPolyP2 = LoadModel("../meshes/PolyPlane.glb");
+
+/*raylib::Model modelSmitH = LoadModel("../meshes/SmitHouston_Tug.glb");
 modelSmitH.transform = raylib::Transform(modelSmitH.transform).Scale(1, 2, 1);
 modelSmitH.transform = raylib::Transform(modelSmitH.transform).RotateXYZ(raylib::Degree(270),0 ,raylib::Degree(270));
-
+*/
 
 
 raylib::Model modelDdg51 = LoadModel("../meshes/ddg51.glb");
@@ -53,8 +53,8 @@ raylib::Model modelDdg51 = LoadModel("../meshes/ddg51.glb");
 
 
 raylib::Camera camera(
-        raylib::Vector3(0, 120, -500),
-        raylib::Vector3(0, 0, 300),
+        raylib::Vector3(0, 120, -400),
+        raylib::Vector3(0, 0, 250),
         raylib::Vector3::Up(),
         45,
         CAMERA_PERSPECTIVE
@@ -65,13 +65,6 @@ float increment = 0.05;
 
 
 while(!window.ShouldClose()) { 
-
-/*if(increment >= 360){
-    increment = 0;
-    
-}
-    increment += 0.01 * window.GetFrameTime();
-    std::cout << increment << std::endl;*/
 
 window.BeginDrawing();
 
@@ -85,24 +78,44 @@ window.BeginDrawing();
    {
 
 
-    DrawBoundedModel(modelCargoG, [](raylib::Transform t) -> raylib::Transform{
-        return t.Translate({100, 0, 0});
+    raylib::Transform transform = raylib::Transform::Identity();
+
+    DrawBoundedModel(modelPolyP, [transform](raylib::Transform t) -> raylib::Transform{
+        return t * transform;
     }, increment);
 
-    DrawBoundedModel(modelPolyP, [](raylib::Transform t) -> raylib::Transform{
-        return t.Translate({0, 0, 0});
+
+    transform = raylib::Transform::Identity();
+    transform = transform * raylib::Transform(modelPolyP.transform).Scale(1, -1, 1);
+    transform = transform * raylib::Transform(modelPolyP.transform).RotateXYZ(raylib::Degree(180), 0 ,raylib::Degree(180));
+    transform = transform *  raylib::Transform(modelPolyP.transform).Translate(0, 50, 0);
+
+    DrawBoundedModel(modelPolyP, [transform](raylib::Transform t) -> raylib::Transform{
+        return t * transform;
     }, increment);
 
-    DrawBoundedModel(modelPolyP2, [](raylib::Transform t) -> raylib::Transform{
-        return t.Translate({-100, 100, 0});
+    transform = raylib::Transform::Identity();
+    transform = transform * raylib::Transform(modelDdg51.transform).Scale(1, 2, 1);
+    transform = transform * raylib::Transform(modelDdg51.transform).RotateXYZ(raylib::Degree(270), 0 ,raylib::Degree(270));
+    transform = transform *  raylib::Transform(modelDdg51.transform).Translate(70, 150, 0);
+
+    DrawBoundedModel(modelDdg51, [transform](raylib::Transform t) -> raylib::Transform{
+        return t * transform;
     }, increment);
 
-    DrawBoundedModel(modelSmitH, [](raylib::Transform t) -> raylib::Transform{
-        return t.Translate({100, 100, 0});
+    transform = raylib::Transform::Identity();
+    transform = transform *  raylib::Transform(modelDdg51.transform).Translate(-150, 0, 0);
+
+    DrawBoundedModel(modelDdg51, [transform](raylib::Transform t) -> raylib::Transform{
+        return t * transform;
     }, increment);
 
-    DrawBoundedModel(modelDdg51, [](raylib::Transform t) -> raylib::Transform{
-        return t.Translate({-200, 0, 0});
+    transform = raylib::Transform::Identity();
+    transform = transform * raylib::Transform(modelDdg51.transform).RotateY(raylib::Degree(90));
+    transform = transform *  raylib::Transform(modelDdg51.transform).Translate(100, -20, 0);
+
+    DrawBoundedModel(modelDdg51, [transform](raylib::Transform t) -> raylib::Transform{
+        return t * transform;
     }, increment);
 
 
