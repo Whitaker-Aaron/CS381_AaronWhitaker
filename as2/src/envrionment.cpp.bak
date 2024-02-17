@@ -1,0 +1,50 @@
+
+
+
+raylib::Vector3 velocity = {x: speed *cos(x:heading.RadianValue()), y:0, z: -speed *sin(x:heading.RadianValue())}
+position += velocity * window.GetFrameTime();
+
+float acceleration = 10;
+
+if(targetSpeed > speed){
+    speed += acceleration * window.GetFrameTime();
+}
+
+if(targetSpeed < speed){
+    speed -= acceleration * window.GetFrameTime(); 
+}
+
+if(IsKeyPressed(key: KEY_W))
+    targetSpeed += 10; 
+if(IsKeyPressed(key: KEY_A))
+    heading += 60; 
+
+//Arrow is return type 
+static constexpr auto AngleClamp: const (lambda) = [](raylib::Degree angle) -> raylib::Degree {}
+    int intpart = angle; 
+    float floatpart = float(angle) - intpart;
+    intpart %= 360;
+    intpart += (intpart < 0) * 360;
+    return intpart + floatpart;
+
+//Can't just replace code with variable set to heading.
+//Issues arise when angles go over 360 degrees. 
+//Using if/while ruins our pipeline and throws away our cache.
+
+heading = -765;
+
+int intpart = heading; 
+float floatpart = float(heading) - intpart;
+
+intpart %= 360; 
+intpart += (intpart < 0)*360;
+
+
+
+//
+
+float difference = abs(x: targetHeading - heading);
+if(targetHeading > heading){
+    if(difference < 180) heading += abs
+    
+}
