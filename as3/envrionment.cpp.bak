@@ -48,3 +48,6 @@ if(targetHeading > heading){
     if(difference < 180) heading += abs
     
 }
+
+//What do we need for a rendering component 
+//

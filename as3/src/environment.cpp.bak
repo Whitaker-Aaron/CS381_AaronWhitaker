@@ -105,6 +105,8 @@ int main() {
 
     //Makes more sense to have a level of indirection.
     std::vector<Entity> entities;
+    Entity& e = entities.emplace_back();
+    e.AddComponent
 
 
     //Double for loop
@@ -121,3 +123,45 @@ int main() {
 //Raylib is also an input server.
 //We don't happen to have a physics server though. 
 //We will use GODOT as a network server. 
+
+Audio Lecture: 
+
+//Sin waves
+//Peaks and valleys
+//As the peaks and valleys get closer together, the sound gets higher and higher.
+//How speakers make sound apparently 
+
+//cone attached to motor 
+//.wav files communicate to the speaker.
+//pcm: pulse code modulation
+//To capture a wave, need to sample at twice the frequency.
+//Game engines have two differences of audio: sound and music.
+// 
+
+struct RenderingComponent : public Component { 
+    raylib::Model model; //assuming set on construction
+
+    void setup() override {
+
+    }
+
+    void cleanup() override {
+
+    }
+
+    void tick(float dt) override {
+        auto& ref = object->GetComponent<TransformComponent>();
+        if(!ref) return;
+        auto& transform = ref->get();
+
+        
+
+        //Lots of talk of references over copies
+        //transform.position;
+        auto [axis, angle] = transform.rotation.ToAxisAngle()
+
+        model.Draw(transform.position, axis, angle);
+    }
+
+}
+

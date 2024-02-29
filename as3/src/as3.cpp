@@ -70,6 +70,7 @@ cs381::SkyBox skybox("textures/skybox.png");
  raylib::Vector3 velocity2 = {0, 0, 0};
  raylib::Vector3 velocity3 = {0, 0, 0};
 
+ float placeholder = 0;
 
 
  SetTargetFPS(60);
@@ -271,6 +272,30 @@ if(IsKeyPressed(KEY_UP)){
   if(plane1Dir > 3){
     plane1Dir = 0;
   }
+
+  switch(plane1Dir){
+    case 0: 
+     placeholder = velocity.z;
+     velocity.x = placeholder;
+     velocity.z = 0;
+     break;
+    case 1: 
+     placeholder = velocity.x;
+     velocity.z = -placeholder;
+     velocity.x = 0;
+     break;
+    case 2:
+     placeholder = velocity.z;
+     velocity.x = placeholder;
+     velocity.z = 0;
+     std::cout << "What direction am I in" << std::endl;
+     break;
+    case 3:
+     placeholder = velocity.x;
+     velocity.z = -placeholder;
+     velocity.x = 0;
+     break; 
+   }
   }
 
   if(plane2){
@@ -279,6 +304,30 @@ if(IsKeyPressed(KEY_UP)){
    if(plane2Dir > 3){
     plane2Dir = 0;
    }
+
+   switch(plane2Dir){
+    case 0: 
+     placeholder = velocity2.z;
+     velocity2.x = placeholder;
+     velocity2.z = 0;
+     break;
+    case 1: 
+     placeholder = velocity2.x;
+     velocity2.z = -placeholder;
+     velocity2.x = 0;
+     break;
+    case 2:
+     placeholder = velocity2.z;
+     velocity2.x = placeholder;
+     velocity2.z = 0;
+     std::cout << "What direction am I in" << std::endl;
+     break;
+    case 3:
+     placeholder = velocity2.x;
+     velocity2.z = -placeholder;
+     velocity2.x = 0;
+     break; 
+   }
   }
 
   if(plane3){
@@ -286,6 +335,30 @@ if(IsKeyPressed(KEY_UP)){
   plane3Dir++;
    if(plane3Dir > 3){
     plane3Dir = 0;
+   }
+
+   switch(plane3Dir){
+    case 0: 
+     placeholder = velocity3.z;
+     velocity3.x = placeholder;
+     velocity3.z = 0;
+     break;
+    case 1: 
+     placeholder = velocity3.x;
+     velocity3.z = -placeholder;
+     velocity3.x = 0;
+     break;
+    case 2:
+     placeholder = velocity3.z;
+     velocity3.x = placeholder;
+     velocity3.z = 0;
+     std::cout << "What direction am I in" << std::endl;
+     break;
+    case 3:
+     placeholder = velocity3.x;
+     velocity3.z = -placeholder;
+     velocity3.x = 0;
+     break; 
    }
   }
    
@@ -303,6 +376,32 @@ if(IsKeyPressed(KEY_UP)){
    if(plane1Dir < 0){
     plane1Dir = 3;
    }
+
+   switch(plane1Dir){
+    case 0: 
+     placeholder = velocity.z;
+     velocity.x = -placeholder;
+     velocity.z = 0;
+     break;
+    case 1: 
+     placeholder = velocity.x;
+     velocity.z = placeholder;
+     velocity.x = 0;
+     break;
+    case 2:
+     placeholder = velocity.z;
+     velocity.x = -placeholder;
+     velocity.z = 0;
+     std::cout << "What direction am I in" << std::endl;
+     break;
+    case 3:
+     placeholder = velocity.x;
+     velocity.z = placeholder;
+     velocity.x = 0;
+     break; 
+   }
+
+   
   }
 
   if(plane2){
@@ -311,6 +410,30 @@ if(IsKeyPressed(KEY_UP)){
    if(plane2Dir < 0){
     plane2Dir = 3;
    }
+
+   switch(plane2Dir){
+    case 0: 
+     placeholder = velocity2.z;
+     velocity2.x = -placeholder;
+     velocity2.z = 0;
+     break;
+    case 1: 
+     placeholder = velocity2.x;
+     velocity2.z = placeholder;
+     velocity2.x = 0;
+     break;
+    case 2:
+     placeholder = velocity2.z;
+     velocity2.x = -placeholder;
+     velocity2.z = 0;
+     std::cout << "What direction am I in" << std::endl;
+     break;
+    case 3:
+     placeholder = velocity2.x;
+     velocity2.z = placeholder;
+     velocity2.x = 0;
+     break; 
+   }
   }
 
   if(plane3){
@@ -318,6 +441,30 @@ if(IsKeyPressed(KEY_UP)){
   plane3Dir--;
    if(plane3Dir < 0){
     plane3Dir = 3;
+   }
+
+   switch(plane3Dir){
+    case 0: 
+     placeholder = velocity3.z;
+     velocity3.x = -placeholder;
+     velocity3.z = 0;
+     break;
+    case 1: 
+     placeholder = velocity3.x;
+     velocity3.z = placeholder;
+     velocity3.x = 0;
+     break;
+    case 2:
+     placeholder = velocity3.z;
+     velocity3.x = -placeholder;
+     velocity3.z = 0;
+     std::cout << "What direction am I in" << std::endl;
+     break;
+    case 3:
+     placeholder = velocity3.x;
+     velocity3.z = placeholder;
+     velocity3.x = 0;
+     break; 
    }
   }
 
