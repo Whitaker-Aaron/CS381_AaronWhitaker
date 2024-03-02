@@ -1,0 +1,167 @@
+// 2/21/24
+#include <memory>
+
+
+//Bare minimum for Object Oriented Entity Architecture.
+
+struct Ball : public Component {
+    void setup(){
+        std::cout << "I am a ball" << std::endl;
+    }
+    
+};
+
+struct Brick : public Component {
+    void setup(){
+        std::cout << "I am a brick" << std::endl;
+    }
+};
+
+struct Component {
+    struct Entity* object;
+
+    Component(struct Entity& e) : object(&e) {}
+
+    virtual void setup() = 0;
+    virtual void cleanup() = 0;
+    //Tick function takes delta time as input.
+    virtual void tick(float dt) = 0;
+
+
+};
+
+struct TransformComponent: public Component { 
+    using Component::Component;
+    raylib::Vector3 position = {0, 0, 0};
+    raylib::Quaternion rotation = raylib::Quaternion::Identity();
+
+}
+
+struct Entity { 
+    //When our entity goes out of scope, all of our components get deleted.
+    std::vector <std::unique_ptr<Component>> components;
+
+    //size_t AddComponent(std::unique_ptr<Component> c){
+    //   //Instead of dying when out of scope, its lifetime will end when components end.
+    //    components.push_back(std::move(c));
+    //    return components.size() - 1;
+    //}
+
+    Entity() { AddComponent<TransformComponent>();}
+    //Deleting the copy constructor
+    Entity(const Entity&) = delete;
+    Entity(Entity&& other) : components(std::move(other.components)){
+        for(auto& c: unique_ptr<Component> &: components)
+            c->object = this;
+    }
+
+    //Crazy version apparently 
+    //Ts will become a string and an int, and args will become a pack of parameters
+    template<std::derived_from<Component> T, typename... Ts>
+    size_t AddComponent(Ts... args){
+        auto c = std::make_unique<T>(*this, std::forward<Ts>(args)...);
+
+    }
+
+
+    //Gives us what we want based on the passed in component(?)
+    template<std::derived_from<Component> T>
+    std::optional<std::reference_wrapper<T>> GetComponent(){
+        if constexpr(std::is_same_v<T, TransformComponent>){
+           T* cast = dynamic_cast<T>(c.get());
+           if(cast) return *cast; 
+        }
+        for(auto& c: unique_ptr<Component> &: components){
+            //Unsmarts pointers us, and dynamic casts ()
+            T* cast = dynamic_cast<T>(c.get());
+            if(cast) return *cast;
+        }
+
+        return std::nullopt;
+    }
+
+
+    void tick(float dt){
+        for(auto& c: components)
+            c->tick(dt)
+    }
+}
+
+
+int main() {
+
+    Ball b;
+    Component* c = &b;
+    c.setup();
+
+    std::optional<int> x = 5;
+    if(x.has_value())
+        int y = x.value();
+    if(x)
+        int y = *x;
+
+    //Possible avenue : 
+    std::vector<Component*> components;
+
+    //Makes more sense to have a level of indirection.
+    std::vector<Entity> entities;
+    Entity& e = entities.emplace_back();
+    e.AddComponent
+
+
+    //Double for loop
+    //Unity's main loop has a double for loop hidden in it.
+    for(Entity& e: entities) e.tick(dt: window.GetFrameTime());
+}
+
+//Going to learn about a render component 
+//                     A physics component 
+//                     And an input component 
+//Outsides of our entities we are going to have a few SERVERS 
+//Our SERVERs will consist of graphics, input, physics, and networking (we won't implement a physics server).
+//Raylib is a graphics server.
+//Raylib is also an input server.
+//We don't happen to have a physics server though. 
+//We will use GODOT as a network server. 
+
+Audio Lecture: 
+
+//Sin waves
+//Peaks and valleys
+//As the peaks and valleys get closer together, the sound gets higher and higher.
+//How speakers make sound apparently 
+
+//cone attached to motor 
+//.wav files communicate to the speaker.
+//pcm: pulse code modulation
+//To capture a wave, need to sample at twice the frequency.
+//Game engines have two differences of audio: sound and music.
+// 
+
+struct RenderingComponent : public Component { 
+    raylib::Model model; //assuming set on construction
+
+    void setup() override {
+
+    }
+
+    void cleanup() override {
+
+    }
+
+    void tick(float dt) override {
+        auto& ref = object->GetComponent<TransformComponent>();
+        if(!ref) return;
+        auto& transform = ref->get();
+
+        
+
+        //Lots of talk of references over copies
+        //transform.position;
+        auto [axis, angle] = transform.rotation.ToAxisAngle()
+
+        model.Draw(transform.position, axis, angle);
+    }
+
+}
+
