@@ -277,7 +277,34 @@ struct PhysicsComponent : public Component {
 	transform.position = transform.position + transform.velocity*dt;
 
 
+	
+
+	
+
+
+};
+
+
+
+};
+
+struct InputComponent : public Component {
+
+	using Component::Component; 
+	raylib::BufferedInput input;
+	size_t* selected;
+
+	bool processInput;
+
+
+
+	void tick(float dt){
+		if(processInput){
+			ProcessEntityInput(*object, *selected, input);
+			input.PollEvents();
+		}
 	}
+
 };
 
 int main() {
@@ -343,6 +370,7 @@ int main() {
 
 	//Set the model and attributes of the entities
 	for(int i = 0; i < entities.size(); i++){
+		entities[i].AddComponent<InputComponent>();
 		entities[i].AddComponent<PhysicsComponent>();
 		if(i < 3){
 			entities[i].AddComponent<RenderingComponent>(raylib::Model("../meshes/PolyPlane.glb"));
@@ -424,13 +452,16 @@ int main() {
 			if(i == selectedPlane){
 				//std::cout << "entity " << i << " selected" << std::endl;
 				//std::cout << "x pos: " << entities[i].GetComponent<TransformComponent>()->get().position.x << std::endl;
-				keepRunning = ProcessEntityInput(entities[i], selectedPlane, inputs);
+				//keepRunning = ProcessEntityInput(entities[i], selectedPlane, inputs);
 				entities[i].GetComponent<RenderingComponent>()->get().drawBox = true;
+				entities[i].GetComponent<InputComponent>()->get().processInput = true;
+				entities[i].GetComponent<InputComponent>()->get().selected = &selectedPlane;
 				
 			}
 
 			else{
 				entities[i].GetComponent<RenderingComponent>()->get().drawBox = false;
+				entities[i].GetComponent<InputComponent>()->get().processInput = false;
 			}
 			
 			//entities[i].GetComponent<TransformComponent>()->get().velocity = CaclulateEntityVelocity(entities[i]);
@@ -441,7 +472,7 @@ int main() {
 		//Event based queue that processes the events based on when they happen.
 		//All of these actions, whatever we subscribe to them with will happen.
 		//
-		inputs.PollEvents();
+		//inputs.PollEvents();
 		
 		// Apply simple physics to plane0
 		/*plane0Velocity = CaclulateVelocity({
