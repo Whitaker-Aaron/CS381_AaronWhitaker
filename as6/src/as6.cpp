@@ -61,6 +61,8 @@ struct TransformComponent : public Component {
     raylib::Vector3 position = {0, 0, 0};
 	raylib::Vector3 velocity = raylib::Vector3::Zero();
 	raylib::Degree heading = 0, targetHeading = 0;
+	raylib::Degree turn = 0, targetTurn = 0, targetRevertTurn = 0;
+	//float maxTurn = 45;
 	float speed = 0, targetSpeed = 0, dt_ = 0;
 
 	float maxSpeed = 50;
@@ -71,7 +73,7 @@ struct TransformComponent : public Component {
 	//unlike dynamic memory allocation or automatic memory allocation where memory is allocated as required at run time.
 
 	float acceleration = 5; 
-	float angularAcceleration = 15;
+	float angularAcceleration = 10;
 
     //Quaternion?????
     raylib::Quaternion rotation = raylib::Quaternion::Identity();
@@ -226,11 +228,12 @@ struct RenderingComponent : public Component {
 
 		auto pos = transform.position;
 		auto head = transform.heading;
+		auto turn = transform.turn;
 
 		//std::cout << pos.x << std::endl;
 
-		auto transformer = [pos, head](raylib::Transform transform) {
-			return transform.Translate(pos).RotateY(raylib::Degree(head));
+		auto transformer = [pos, head, turn](raylib::Transform transform) {
+			return transform.Translate(pos).RotateX(raylib::Degree(turn)).RotateY(raylib::Degree(head));
 		};
 
 		//To axis angle returns a std::pair of a <vector3, and a radian>.
@@ -374,8 +377,8 @@ int main() {
 		entities[i].AddComponent<PhysicsComponent>();
 		if(i < 3){
 			entities[i].AddComponent<RenderingComponent>(raylib::Model("../meshes/PolyPlane.glb"));
-			entities[i].GetComponent<TransformComponent>()->get().acceleration = 50;
-			entities[i].GetComponent<TransformComponent>()->get().maxSpeed = 150;
+			entities[i].GetComponent<TransformComponent>()->get().acceleration = 100;
+			entities[i].GetComponent<TransformComponent>()->get().maxSpeed = 500;
 
 		}
 	}
@@ -642,6 +645,7 @@ bool ProcessEntityInput(Entity& entity, size_t& selectedPlane, raylib::BufferedI
 	inputs["increaseVelocity"] = raylib::Action::key(KEY_W).SetPressedCallback([&transform]{
 		
 		transform.targetSpeed += 1;
+		
 	}).move();
 	}
 
@@ -656,6 +660,7 @@ bool ProcessEntityInput(Entity& entity, size_t& selectedPlane, raylib::BufferedI
 	inputs["increaseHeading"] = raylib::Action::key(KEY_A).SetPressedCallback([&transform]{
 		
 		transform.targetHeading += 5;
+		transform.targetTurn += 5;
 	}).move();
 	}
 
@@ -663,6 +668,7 @@ bool ProcessEntityInput(Entity& entity, size_t& selectedPlane, raylib::BufferedI
 	inputs["decreaseHeading"] = raylib::Action::key(KEY_D).SetPressedCallback([&transform]{
 		
 		transform.targetHeading -= 5;
+		transform.targetTurn -= 5;
 	}).move();
 	}
 
@@ -705,10 +711,12 @@ raylib::Vector3 CaclulateVelocity(const CalculateVelocityParams& data) {
 	else if(data.speed > target) data.speed -= data.acceleration * data.dt;
 	data.speed = Clamp(data.speed, data.minSpeed, data.maxSpeed);
 
-	target = AngleClamp(data.targetHeading);
+	/*target = AngleClamp(data.targetHeading);
 	float difference = abs(target - data.heading);
 	if(target > data.heading) {
-		if(difference < 180) data.heading += data.angularAcceleration * data.dt;
+		if(difference < 180){
+			 data.heading += data.angularAcceleration * data.dt;
+		}
 		else if(difference > 180) data.heading -= data.angularAcceleration * data.dt;
 	} else if(target < data.heading) {
 		if(difference < 180) data.heading -= data.angularAcceleration * data.dt;
@@ -717,6 +725,22 @@ raylib::Vector3 CaclulateVelocity(const CalculateVelocityParams& data) {
 	if(difference < .5) data.heading = target; // If the heading is really close to correct 
 	data.heading = AngleClamp(data.heading);
 	raylib::Radian angle = raylib::Degree(data.heading);
+
+	target = AngleClamp(data.targetTurn);
+	float difference = abs(target - data.turn);
+	if(target > data.turn) {
+		if(difference < 45){
+			 data.turn += data.angularAcceleration * data.dt;
+		}
+		else if(difference > 45) data.turn -= data.angularAcceleration * data.dt;
+	} else if(target < data.heading) {
+		if(difference < 45) data.turn -= data.angularAcceleration * data.dt;
+		else if(difference > 45) data.turn += data.angularAcceleration * data.dt;
+	} 
+	if(difference < .5) data.turn = target; // If the heading is really close to correct 
+	data.heading = AngleClamp(data.heading);*/
+	raylib::Radian angle = raylib::Degree(data.heading);
+	
 
 	
 	return {cos(angle) * data.speed, 0, -sin(angle) * data.speed};
@@ -761,9 +785,28 @@ raylib::Vector3 CaclulateEntityVelocity(Entity& entity){
 	transform.heading = AngleClamp(transform.heading);
 	raylib::Radian angle = raylib::Degree(transform.heading);
 
+	if(difference == 0){
+	 transform.targetTurn = 0;
+	}
+
+	target = AngleClamp(transform.targetTurn);
+	difference = abs(target - transform.turn);
+	if(target > transform.turn) {
+		if(difference < 180){
+			 transform.turn += transform.angularAcceleration * transform.dt_;
+		}
+		else if(difference > 180) transform.turn -= transform.angularAcceleration * transform.dt_;
+	} else if(target < transform.heading) {
+		if(difference < 180) transform.turn -= transform.angularAcceleration * transform.dt_;
+		else if(difference > 180) transform.turn += transform.angularAcceleration * transform.dt_;
+	} 
+	if(difference < .5) transform.turn = target; // If the heading is really close to correct 
+	transform.turn = AngleClamp(transform.turn);
+	
+
 	return {cos(angle) * transform.speed, 0, -sin(angle) * transform.speed};
 
-	return raylib::Vector3{0, 0, 0};
+	//return raylib::Vector3{0, 0, 0};
 
 }
 

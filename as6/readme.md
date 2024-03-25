@@ -2,7 +2,7 @@
 
 - git clone https://github.com/Whitaker-Aaron/CS381_AaronWhitaker.git
 
-    then cd into the as5 folder.
+    then cd into the as6 folder.
 - cd as6
 
 2. To compile the code, empty out the build folder:
