@@ -187,6 +187,8 @@ struct Ship {
 struct Player {
     raylib::Sound* death;
     Ship* bossReference; 
+    float totalScore;
+    float targetScore;
 };
 
 struct Boss {
@@ -196,6 +198,7 @@ struct Boss {
 enum StateMachine {
 
 titleScreen,
+controlScreen,
 mainLevel,
 bossFight,
 victory,
@@ -273,19 +276,27 @@ void Draw(scene& scene, StateMachine& state, float dt){
     if(!(scene.HasComponent<Ship>(e)) && (scene.HasComponent<Physics3D>(e)) && state != StateMachine::gameOver && state != StateMachine::victory){
         auto& physics = scene.GetComponent<Physics3D>(e);
         
+        
          if(CheckCollisionBoxSphere(rendering.model->GetTransformedBoundingBox(), physics.shipPos, 20.0f)){
+              
              if(rendering.particles.empty()){
                 UpdateHealth(scene, player);
                 rendering.impactPoint = Vector2{physics.shipPos.x, physics.shipPos.y};
                 FillParticleVector(rendering.particles, rendering.impactPoint);
                 rendering.drawParticles = DrawParticles(rendering.particles, dt, rendering.impactPoint);
+                if(scene.HasComponent<Player>(player)){
+                 auto& playerPlayer = scene.GetComponent<Player>(player);
+                 playerPlayer.targetScore -= 50.0f;
+                }
+
                 (*(rendering.ping)).Play();
              }
          }
          //ONLY WORKS IF PLAYER IS INITIALIZED AS FIRST ENTITY
         
-        if(scene.HasComponent<Ship>(player)){
+        if(scene.HasComponent<Ship>(player) && scene.HasComponent<Player>(player)){
           auto& ship = scene.GetComponent<Ship>(player);
+          auto& playerPlayer = scene.GetComponent<Player>(player);
           if(CheckCollisionBoxSphere(rendering.model->GetTransformedBoundingBox(), ship.shipLaserPosition, 20.0f) && ship.drawLaser){
              //std::cout << "laser collided" << std::endl;
              rendering.invisible = true;
@@ -293,7 +304,8 @@ void Draw(scene& scene, StateMachine& state, float dt){
              FillParticleVector(rendering.particles, rendering.impactPoint);
                 
              rendering.drawParticles = DrawParticles(rendering.particles, dt, rendering.impactPoint);
-
+             
+             playerPlayer.targetScore += 100.0f;
              (*(rendering.ping)).Play();
           }
         }
@@ -317,7 +329,7 @@ void Draw(scene& scene, StateMachine& state, float dt){
              rendering.drawParticles = DrawParticles(rendering.particles, dt, rendering.impactPoint);
              (*(rendering.ping)).Play();
              
-                bossShip.targetHealth -= 50.0f;
+                bossShip.targetHealth -= 25.0f;
                 bossShip.invul = true;
              } 
              
@@ -344,6 +356,7 @@ void Draw(scene& scene, StateMachine& state, float dt){
              rendering.drawParticles = DrawParticles(rendering.particles, dt, rendering.impactPoint);
              (*(rendering.ping)).Play();
              playerShip.targetHealth -= 50.0f;
+             playerPlayer.targetScore -= 100.0f;
             
             }
         }
@@ -361,6 +374,35 @@ void Draw(scene& scene, StateMachine& state, float dt){
     if(rendering.drawParticles) rendering.drawParticles = DrawParticles(rendering.particles, dt, rendering.impactPoint);
  
  }
+}
+
+void DrawTutorial(scene& scene, cs381::Entity e, float dt){
+    if(!scene.HasComponent<Rendering>(e)) return;
+    if(!scene.HasComponent<Transforming>(e)) return;
+
+    auto& transforming = scene.GetComponent<Transforming>(e);
+    auto& rendering = scene.GetComponent<Rendering>(e);
+
+    auto pos = transforming.position; 
+    auto scale = transforming.scale;
+
+    auto [axis, angle] = scene.HasComponent<Physics3D>(e) ? scene.GetComponent<Physics3D>(e).quat.ToAxisAngle() : std::pair<raylib::Vector3, raylib::Radian>(raylib::Vector3{0,0,0}, 0);
+
+    
+
+     auto transformer3D = [pos, scale, axis, angle](raylib::Transform transform){
+        return transform.Translate(pos).Rotate(axis, angle).Scale(scale.x, scale.y, scale.z);
+    };
+  
+
+    raylib::Transform backupTransform = rendering.model->transform;
+    rendering.model->transform = transformer3D(backupTransform);
+
+    
+
+    rendering.model->Draw({});
+
+    rendering.model->transform = backupTransform;
 }
 
 void ApplyPhysics(scene& scene, float dt){
@@ -397,6 +439,45 @@ for(cs381::Entity e = 0; e < scene.entityMasks.size(); e++){
 }
 
 }
+
+void ApplyTutorialPhysics(scene& scene, cs381::Entity e, float dt){
+  if(!scene.HasComponent<Physics3D>(e)) return;
+  if(!scene.HasComponent<Transforming>(e)) return;
+
+  
+  auto& transforming = scene.GetComponent<Transforming>(e);
+  auto& physics = scene.GetComponent<Physics3D>(e);
+
+  raylib::Quaternion target = raylib::Quaternion::FromEuler(DegreeToRadian(physics.roll), DegreeToRadian(physics.yaw), DegreeToRadian(physics.pitch));
+  //std::cout << target.x << std::endl;
+  physics.quat = physics.quat.Slerp(target, dt*2);
+
+
+  transforming.position = transforming.position + transforming.velocity*dt;
+
+}
+
+void UpdateScore(scene& scene, cs381::Entity e, float dt){
+
+    if(!(scene.HasComponent<Player>(e))) return;
+    auto& player = scene.GetComponent<Player>(e);
+
+    if(player.targetScore < player.totalScore){
+        player.totalScore -= 200*dt;
+        if(abs(player.targetScore - player.totalScore) <= 5){
+            player.totalScore = player.targetScore;
+        }
+    }
+    else if(player.targetScore > player.totalScore){
+        player.totalScore += 200*dt;
+        if(abs(player.targetScore - player.totalScore) <= 5){
+            player.totalScore = player.targetScore;
+        }
+    }
+    
+}
+
+
 
 void UpdatePlayer(scene& scene, cs381::Entity e, float dt){
     
@@ -446,7 +527,59 @@ void UpdatePlayer(scene& scene, cs381::Entity e, float dt){
                 transforming.position.x -= 130 * dt;
             }
         }    
+
+
     
+}
+
+void UpdatePlayerTutorial(scene&scene, cs381::Entity e, float dt){
+    if(!scene.HasComponent<Transforming>(e)) return;
+        if(!scene.HasComponent<Input>(e)) return;
+        if(!scene.HasComponent<Player>(e)) return;
+        if(!scene.HasComponent<Rendering>(e)) return;
+
+        auto& transforming = scene.GetComponent<Transforming>(e);
+        auto& render = scene.GetComponent<Rendering>(e);
+
+        
+        if(IsKeyDown(KEY_W)){
+            if(GetWorldToScreen(transforming.position, (*(render.camera))).y <= 40.0f){
+
+            }
+            else{
+                transforming.position.y += 130 * dt;
+            }
+        }
+
+        if(IsKeyDown(KEY_A)){
+    
+            if(GetWorldToScreen(transforming.position, (*(render.camera))).x <= 60.0f){
+
+            }
+            else{
+                transforming.position.x += 130 * dt;
+            }
+
+        }
+
+         if(IsKeyDown(KEY_S)){
+             if(GetWorldToScreen(transforming.position, (*(render.camera))).y > (*(render.window)).GetHeight() - 420){
+
+             }
+             else{
+                 transforming.position.y -= 130 * dt;
+             }
+         }
+
+         if(IsKeyDown(KEY_D)){
+             if(GetWorldToScreen(transforming.position, (*(render.camera))).x > (*(render.window)).GetWidth() - 600){
+
+             }
+             else{
+                 transforming.position.x -= 130 * dt;
+             }
+         }    
+
 }
 
 void UpdateShipProperties(scene& scene, float dt){
@@ -460,7 +593,7 @@ void UpdateShipProperties(scene& scene, float dt){
   auto& ship = scene.GetComponent<Ship>(e);
   auto& transforming = scene.GetComponent<Transforming>(e);
 
-  std::cout << ship.shipHealth << std::endl;
+  //std::cout << ship.shipHealth << std::endl;
 
     if(ship.drawLaser == true){
      if(scene.HasComponent<Player>(e)){
@@ -634,12 +767,15 @@ void DisplayShipHUD(scene& scene, cs381::Entity e, raylib::Text* text, raylib::W
     }
 
     if(scene.HasComponent<Player>(e)){
+     auto& player = scene.GetComponent<Player>(e);
 
-    DrawRectangle(horizontalOffset, (*window).GetHeight() / 4 - 10, 300, 20, raylib::Color(GRAY));
-    DrawRectangle(horizontalOffset, (*window).GetHeight() / 4 - 10, ship.targetLaserBar, 20, raylib::Color(GREEN));
+     DrawRectangle(horizontalOffset, (*window).GetHeight() / 4 - 10, 300, 20, raylib::Color(GRAY));
+     DrawRectangle(horizontalOffset, (*window).GetHeight() / 4 - 10, ship.targetLaserBar, 20, raylib::Color(GREEN));
 
      (*text).Draw("Ship Health: ", (horizontalOffset), (70), 40, raylib::Color::White());
      (*text).Draw("Laser: ", (horizontalOffset), (*window).GetHeight() / 4 - 40, 20, raylib::Color::White());
+     (*text).Draw("Score: ", (horizontalOffset), (*window).GetHeight() / 4 + 20, 30, raylib::Color::White());
+     (*text).Draw(std::to_string((int)player.totalScore), (horizontalOffset + 120), (*window).GetHeight() / 4 + 20, 30, raylib::Color::White());
      if(ship.shipHealth <= 0) (*text).Draw("DESTORYED ", (horizontalOffset), (100), 40, raylib::Color::Red());
     }
 
@@ -650,12 +786,39 @@ void DisplayShipHUD(scene& scene, cs381::Entity e, raylib::Text* text, raylib::W
 
 }
 
+void ResetPlayerPosition(scene& scene, cs381::Entity e){
+    if(!(scene.HasComponent<Transforming>(e))) return;
+    if(!(scene.HasComponent<Player>(e))) return;
+    if(!(scene.HasComponent<Ship>(e))) return;
+    if(!(scene.HasComponent<Physics3D>(e))) return;
+    if(!(scene.HasComponent<Rendering>(e))) return;
+
+    scene.GetComponent<Transforming>(e).velocity = raylib::Vector3{-50, 0, 0};
+    scene.GetComponent<Transforming>(e).position = raylib::Vector3{0, 0, 0};
+    scene.GetComponent<Physics3D>(e).quat = raylib::Quaternion::FromEuler(0.0f, 0.0f, 0.0f);
+    scene.GetComponent<Physics3D>(e).targetRoll = 0.0f;
+    scene.GetComponent<Ship>(e).targetLaserBar = 300.0f;
+    //scene.GetComponent<Ship>(e).laser = 0.0f;
+    
+
+    
+}
+
+
 void TrackGameState(scene& scene, cs381::Entity e, raylib::Vector3& playerPos, StateMachine& state, BossPhase& phase){
     
     
 
     if(state == StateMachine::titleScreen){
-        if(IsKeyPressed(KEY_ENTER)) state = StateMachine::mainLevel;
+        if(IsKeyPressed(KEY_ENTER)) state = StateMachine::controlScreen;
+        return;
+    }
+
+    if(state == StateMachine::controlScreen){
+        if(IsKeyPressed(KEY_ENTER)){
+            ResetPlayerPosition(scene, e);
+            state = StateMachine::mainLevel;
+        } 
         return;
     }
 
@@ -712,7 +875,7 @@ void UpdateBossAI(scene& scene, cs381::Entity player, cs381::Entity boss, BossPh
      }
     }
     if(phase == speeding){
-        std::cout << "speeding" << std::endl;
+        
         //bossTransform.velocity = raylib::Vector3{-150, 0, 0};
         if(playerTransform.position.x <= -5000){
             phase = offscreen;
@@ -729,7 +892,7 @@ void UpdateBossAI(scene& scene, cs381::Entity player, cs381::Entity boss, BossPh
     }
 
     if(phase == offscreen){
-        std::cout << "offscreen" << std::endl;
+        
         
         if(GetWorldToScreen(bossTransform.position, (*(bossRender.camera))).x < (*(bossRender.window)).GetWidth() - 100){
             //std::cout << "on screen" << std::endl;    
@@ -747,7 +910,7 @@ void UpdateBossAI(scene& scene, cs381::Entity player, cs381::Entity boss, BossPh
         bossTransform.position.y += dif * (*(bossRender.window)).GetFrameTime();
         bossPhysics.roll = playerPhysics.roll;
 
-        std::cout << bossShip.targetLaserBar << std::endl;
+        
          if(!(bossShip.targetLaserBar < 300.0f)){
          bossShip.drawLaser = true;
          (*(bossRender.laser)).Play(); 
@@ -787,6 +950,11 @@ raylib::Sound down("../sounds/playerdown.mp3");
 raylib::Music death("../sounds/continue.mp3");
 raylib::Music boss("../sounds/boss.mp3");
 raylib::Music vict("../sounds/victory.mp3");
+raylib::Music title("../sounds/titlescreen.mp3");
+raylib::Music controls("../sounds/controlscrene.mp3");
+
+raylib::Texture2D titleScreenTexture = LoadTexture("../textures/spacegamescreen.png");
+raylib::Texture2D controlScreenTexture = LoadTexture("../textures/controlscreen.png");
 
 raylib::Model modelMeteor = LoadModel("../meshes/meteorite.glb");
 raylib::Model* meteorPointer = &modelMeteor;
@@ -845,7 +1013,8 @@ mainScene.GetComponent<Physics3D>(player).acceleration = 5;
 mainScene.GetComponent<Physics3D>(player).quat = raylib::Quaternion::FromEuler(0.0f, 0.0f, 0.0f);
 mainScene.GetComponent<Physics3D>(player).isMeteor = false;
 
-mainScene.GetComponent<Transforming>(player).velocity = raylib::Vector3{-50, 0, 0};
+mainScene.GetComponent<Transforming>(player).position = raylib::Vector3{115, 80, 0};
+mainScene.GetComponent<Transforming>(player).velocity = raylib::Vector3{0, 0, 0};
 mainScene.GetComponent<Transforming>(player).scale = raylib::Vector3{1, 1, 1};
 
 mainScene.GetComponent<Input>(player).input = &inputs;
@@ -867,6 +1036,7 @@ mainScene.GetComponent<Ship>(player).targetBeamPos = 0.0f;
 mainScene.GetComponent<Ship>(player).drawLaser = false;
 
 mainScene.GetComponent<Player>(player).death = &down;
+mainScene.GetComponent<Player>(player).totalScore = 0;
 
 auto meteor1 = mainScene.CreateEntity();
 auto meteor2 = mainScene.CreateEntity();
@@ -1099,7 +1269,7 @@ BossPhase phase = idle;
 float wait = 0.0f;
 float musicVal = 0.5f;
 raylib::Vector3 playerPosition = {0,0,0};
-music.SetVolume(musicVal);
+//music.SetVolume(musicVal);
 
 InitializeBuffer(mainScene);
 
@@ -1117,8 +1287,41 @@ switch(state){
     
     //window.BeginDrawing();
     //{
+    titleScreenTexture.width = window.GetWidth();
+    titleScreenTexture.height = window.GetHeight();
+    DrawTexture(titleScreenTexture, 0, 0, raylib::WHITE); 
+    title.Play();
+    title.Update();
+    
+    //text.Draw("To initiate liftoff, press enter", (window.GetWidth()/2), (window.GetHeight()/2), 20, raylib::Color::White());
 
-    text.Draw("To initiate liftoff, press enter", (window.GetWidth()/2), (window.GetHeight()/2), 20, raylib::Color::White());
+    //window.EndDrawing();
+    //}
+
+    TrackGameState(mainScene, player, playerPosition, state, phase);
+    break;
+
+    case StateMachine::controlScreen : 
+    
+    //window.BeginDrawing();
+    //{
+    controlScreenTexture.width = window.GetWidth();
+    controlScreenTexture.height = window.GetHeight();
+    DrawTexture(controlScreenTexture, 0, 0, raylib::WHITE); 
+    controls.Play();
+    controls.Update();
+
+    camera.BeginMode();
+    {
+     ApplyTutorialPhysics(mainScene, player, window.GetFrameTime());
+     UpdatePlayerTutorial(mainScene, player, window.GetFrameTime());
+     UpdateShipProperties(mainScene, window.GetFrameTime());
+     DrawTutorial(mainScene, player, window.GetFrameTime());
+    }
+    camera.EndMode();
+    inputs.PollEvents();
+    
+    //text.Draw("To initiate liftoff, press enter", (window.GetWidth()/2), (window.GetHeight()/2), 20, raylib::Color::White());
 
     //window.EndDrawing();
     //}
@@ -1138,6 +1341,7 @@ switch(state){
      music.Update();
      TrackGameState(mainScene, player, playerPosition, state, phase);
      UpdatePlayer(mainScene, player, window.GetFrameTime());
+     UpdateScore(mainScene, player, window.GetFrameTime());
      UpdateShipProperties(mainScene, window.GetFrameTime());
      UpdateShipReference(mainScene);
      ApplyPhysics(mainScene, window.GetFrameTime());
@@ -1150,7 +1354,7 @@ switch(state){
     //DRAW HUD 
     DisplayShipHUD(mainScene, player, &text, &window, 30);
 
-    DrawFPS(10, 10);
+    //DrawFPS(10, 10);
     inputs.PollEvents();
     
     break;
@@ -1168,13 +1372,14 @@ switch(state){
     }
 
     skybox.Draw();
+    UpdateScore(mainScene, player, window.GetFrameTime());
     Draw(mainScene, state, window.GetFrameTime());
 
     }
     camera.EndMode();
 
     DisplayShipHUD(mainScene, player, &text, &window, 30);
-    DrawFPS(10, 10);
+    //DrawFPS(10, 10);
 
     break;
 
@@ -1203,6 +1408,7 @@ switch(state){
 
      TrackGameState(mainScene, player, playerPosition, state, phase);
      UpdatePlayer(mainScene, player, window.GetFrameTime());
+     UpdateScore(mainScene, player, window.GetFrameTime());
      UpdateShipProperties(mainScene, window.GetFrameTime());
      UpdateShipReference(mainScene);
      ApplyPhysics(mainScene, window.GetFrameTime());
@@ -1219,7 +1425,7 @@ switch(state){
      DisplayShipHUD(mainScene, bossEntity, &text, &window, window.GetWidth() - 400);
     }
 
-    DrawFPS(10, 10);
+    //DrawFPS(10, 10);
     inputs.PollEvents();
     
     break;
@@ -1238,6 +1444,7 @@ switch(state){
     {
     
     TrackGameState(mainScene, player, playerPosition, state, phase);
+    UpdateScore(mainScene, player, window.GetFrameTime());
     skybox.Draw();
     ApplyPhysics(mainScene, window.GetFrameTime());
     Draw(mainScene, state, window.GetFrameTime());
