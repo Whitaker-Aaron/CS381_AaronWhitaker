@@ -167,11 +167,6 @@ struct Input {
     bool selected;
 };
 
-struct Player {
-    raylib::Sound* death;
-};
-
-
 
 struct Ship {
 
@@ -180,10 +175,22 @@ struct Ship {
     float targetLaserBar;
     float targetHealth;
     float shipHealth;
+    float invulMeter = 0.0f;
     bool drawLaser = false;
+    bool invul = false;
+    
  
     
 
+};
+
+struct Player {
+    raylib::Sound* death;
+    Ship* bossReference; 
+};
+
+struct Boss {
+    bool fightStarted;
 };
 
 enum StateMachine {
@@ -191,6 +198,7 @@ enum StateMachine {
 titleScreen,
 mainLevel,
 bossFight,
+victory,
 gameOver
 
 };
@@ -200,7 +208,8 @@ enum BossPhase {
 idle, 
 speeding, 
 offscreen,
-ready
+ready,
+destroyed
 
 };
 
@@ -261,7 +270,7 @@ void Draw(scene& scene, StateMachine& state, float dt){
 
     //CHECK TO SEE IF METEOR COLLIDED OR DESTROYED
     
-    if(!(scene.HasComponent<Ship>(e)) && (scene.HasComponent<Physics3D>(e)) && state != StateMachine::gameOver){
+    if(!(scene.HasComponent<Ship>(e)) && (scene.HasComponent<Physics3D>(e)) && state != StateMachine::gameOver && state != StateMachine::victory){
         auto& physics = scene.GetComponent<Physics3D>(e);
         
          if(CheckCollisionBoxSphere(rendering.model->GetTransformedBoundingBox(), physics.shipPos, 20.0f)){
@@ -287,6 +296,56 @@ void Draw(scene& scene, StateMachine& state, float dt){
 
              (*(rendering.ping)).Play();
           }
+        }
+    }
+
+    else if((scene.HasComponent<Ship>(e)) && (scene.HasComponent<Physics3D>(e)) && ((scene.HasComponent<Boss>(e))) && state == StateMachine::bossFight){
+        auto& physics = scene.GetComponent<Physics3D>(e);
+        
+        
+        if(scene.HasComponent<Ship>(player) && scene.GetComponent<Boss>(e).fightStarted == true){
+          auto& playerShip = scene.GetComponent<Ship>(player);
+          auto& bossShip = scene.GetComponent<Ship>(e);
+
+          if(CheckCollisionBoxSphere(rendering.model->GetTransformedBoundingBox(), playerShip.shipLaserPosition, 20.0f) && playerShip.drawLaser){
+             //std::cout << "laser collided" << std::endl;
+            //  rendering.invisible = true;
+            //if(rendering.particles.empty()){
+            if(bossShip.invul == false){
+             rendering.impactPoint = Vector2{pos.x, pos.y};
+             FillParticleVector(rendering.particles, rendering.impactPoint);
+             rendering.drawParticles = DrawParticles(rendering.particles, dt, rendering.impactPoint);
+             (*(rendering.ping)).Play();
+             
+                bossShip.targetHealth -= 50.0f;
+                bossShip.invul = true;
+             } 
+             
+            //}
+
+            std::cout << "Ship collided" << std::endl;
+          }
+        }
+
+    }
+
+    else if((scene.HasComponent<Ship>(e)) && (scene.HasComponent<Physics3D>(e)) && ((scene.HasComponent<Player>(e))) && state == StateMachine::bossFight){
+        auto& playerShip = scene.GetComponent<Ship>(e);
+        auto& playerPlayer = scene.GetComponent<Player>(e);
+        auto& bossShip = playerPlayer.bossReference;
+
+        //std::cout << (*bossShip).shipLaserPosition.x << std::endl;
+        if(CheckCollisionBoxSphere(rendering.model->GetTransformedBoundingBox(), (*bossShip).shipLaserPosition, 20.0f) && (*bossShip).drawLaser){
+             //std::cout << "laser collided" << std::endl;
+            //  rendering.invisible = true;
+            if(rendering.particles.empty()){
+             rendering.impactPoint = Vector2{pos.x, pos.y};
+             FillParticleVector(rendering.particles, rendering.impactPoint);
+             rendering.drawParticles = DrawParticles(rendering.particles, dt, rendering.impactPoint);
+             (*(rendering.ping)).Play();
+             playerShip.targetHealth -= 50.0f;
+            
+            }
         }
     }
       
@@ -382,8 +441,6 @@ void UpdatePlayer(scene& scene, cs381::Entity e, float dt){
         if(IsKeyDown(KEY_D)){
             if(GetWorldToScreen(transforming.position, (*(render.camera))).x > (*(render.window)).GetWidth()){
 
-            
-
             }
             else{
                 transforming.position.x -= 130 * dt;
@@ -403,6 +460,8 @@ void UpdateShipProperties(scene& scene, float dt){
   auto& ship = scene.GetComponent<Ship>(e);
   auto& transforming = scene.GetComponent<Transforming>(e);
 
+  std::cout << ship.shipHealth << std::endl;
+
     if(ship.drawLaser == true){
      if(scene.HasComponent<Player>(e)){
      ship.targetBeamPos = ship.targetBeamPos - 2500.0f*dt;
@@ -418,7 +477,30 @@ void UpdateShipProperties(scene& scene, float dt){
 
       
      }
+
+     else if(scene.HasComponent<Boss>(e)){
+        ship.targetBeamPos = ship.targetBeamPos + 2500.0f*dt;
+        ship.shipLaserPosition = raylib::Vector3((transforming.position.x + ship.targetBeamPos), transforming.position.y, transforming.position.z);
+
+        DrawBeam(raylib::Vector3(transforming.position.x + 20, transforming.position.y, transforming.position.z), ship.shipLaserPosition, RED);
+
+        if(ship.targetBeamPos >= 400){
+            ship.drawLaser = false;
+            ship.targetBeamPos = 0;
+        }
+
+     }
     }
+
+    if(ship.invul == true){
+        ship.invulMeter += 20*dt;
+        if(ship.invulMeter >= 50){
+            ship.invul = false;
+            ship.invulMeter = 0.0f;
+        }
+    }
+
+   
     if(ship.targetLaserBar < 300){
         ship.targetLaserBar += 100*dt;
 
@@ -475,7 +557,7 @@ void AddBuffer(int e, Input& input, Transforming& transforming, Rendering& rende
 		
 
         
-        std::cout << ship.targetLaserBar << std::endl;
+        //std::cout << ship.targetLaserBar << std::endl;
         if(!(ship.targetLaserBar < 300.0f)){
         ship.drawLaser = true;
         (*(render.laser)).Play(); 
@@ -525,44 +607,53 @@ void InitializeBuffer(scene& scene){
     }
 }
 
-void DisplayShipHUD(scene& scene, cs381::Entity e, raylib::Text* text, raylib::Window* window){
+void DisplayShipHUD(scene& scene, cs381::Entity e, raylib::Text* text, raylib::Window* window, float horizontalOffset){
     if(!scene.HasComponent<Ship>(e)) return;
 
     auto& ship = scene.GetComponent<Ship>(e);
     //auto.shipHealth = ship.shipHealth;
 
-    DrawRectangle(30 , (*window).GetHeight() / 4 - 10, 300, 20, raylib::Color(GRAY));
-    DrawRectangle(30 , (*window).GetHeight() / 4 - 10, ship.targetLaserBar, 20, raylib::Color(GREEN));
+ 
 
-    DrawRectangle(30 , (*window).GetHeight() / 6 - 10, 300, 20, raylib::Color(GRAY));
+    DrawRectangle(horizontalOffset, (*window).GetHeight() / 6 - 10, 300, 20, raylib::Color(GRAY));
 
     if(ship.shipHealth > 200 && ship.shipHealth <= 300){
-     DrawRectangle(30 , (*window).GetHeight() / 6 - 10, ship.shipHealth, 20, raylib::Color(GREEN));
+     DrawRectangle(horizontalOffset , (*window).GetHeight() / 6 - 10, ship.shipHealth, 20, raylib::Color(GREEN));
     }
 
     else if(ship.shipHealth > 100 && ship.shipHealth <= 200){
-     DrawRectangle(30 , (*window).GetHeight() / 6 - 10, ship.shipHealth, 20, raylib::Color(YELLOW));
+     DrawRectangle(horizontalOffset, (*window).GetHeight() / 6 - 10, ship.shipHealth, 20, raylib::Color(YELLOW));
     }
 
     else if(ship.shipHealth > 50 && ship.shipHealth <= 100){
-     DrawRectangle(30 , (*window).GetHeight() / 6 - 10, ship.shipHealth, 20, raylib::Color(ORANGE));
+     DrawRectangle(horizontalOffset, (*window).GetHeight() / 6 - 10, ship.shipHealth, 20, raylib::Color(ORANGE));
     }
 
     else if(ship.shipHealth > 0 && ship.shipHealth <= 50){
-     DrawRectangle(30 , (*window).GetHeight() / 6 - 10, ship.shipHealth, 20, raylib::Color(RED));
+     DrawRectangle(horizontalOffset, (*window).GetHeight() / 6 - 10, ship.shipHealth, 20, raylib::Color(RED));
     }
 
     if(scene.HasComponent<Player>(e)){
-     (*text).Draw("Ship Health: ", (30), (70), 40, raylib::Color::White());
-     (*text).Draw("Laser: ", (30), (140), 20, raylib::Color::White());
-     if(ship.shipHealth <= 0) (*text).Draw("DESTORYED ", (30), (100), 40, raylib::Color::Red());
+
+    DrawRectangle(horizontalOffset, (*window).GetHeight() / 4 - 10, 300, 20, raylib::Color(GRAY));
+    DrawRectangle(horizontalOffset, (*window).GetHeight() / 4 - 10, ship.targetLaserBar, 20, raylib::Color(GREEN));
+
+     (*text).Draw("Ship Health: ", (horizontalOffset), (70), 40, raylib::Color::White());
+     (*text).Draw("Laser: ", (horizontalOffset), (*window).GetHeight() / 4 - 40, 20, raylib::Color::White());
+     if(ship.shipHealth <= 0) (*text).Draw("DESTORYED ", (horizontalOffset), (100), 40, raylib::Color::Red());
+    }
+
+    else{
+        (*text).Draw("BOSS: ", (horizontalOffset), (70), 40, raylib::Color::White());
+
     }
 
 }
 
-
-void TrackGameState(scene& scene, cs381::Entity e, StateMachine& state){
+void TrackGameState(scene& scene, cs381::Entity e, raylib::Vector3& playerPos, StateMachine& state, BossPhase& phase){
     
+    
+
     if(state == StateMachine::titleScreen){
         if(IsKeyPressed(KEY_ENTER)) state = StateMachine::mainLevel;
         return;
@@ -572,8 +663,12 @@ void TrackGameState(scene& scene, cs381::Entity e, StateMachine& state){
     if(!(scene.HasComponent<Ship>(e))) return;
     if(!(scene.HasComponent<Player>(e))) return;
 
+    
+
     auto& transforming = scene.GetComponent<Transforming>(e);
     auto& ship = scene.GetComponent<Ship>(e);
+
+    playerPos = transforming.position;
 
     if(ship.shipHealth <= 0.0f){
          (*(scene.GetComponent<Player>(e).death)).Play();
@@ -581,12 +676,95 @@ void TrackGameState(scene& scene, cs381::Entity e, StateMachine& state){
          return;
     }
 
-    if(state == StateMachine::mainLevel && transforming.position.x <= -4600) state = StateMachine::bossFight;
+    if(state == StateMachine::mainLevel && transforming.position.x <= -4200) state = StateMachine::bossFight;
+    if(state == StateMachine::bossFight && phase == BossPhase::destroyed) state = victory;
 
 }
 
-void UpdateBossAI(scene& scene, cs381::Entity e){
+void UpdateBossAI(scene& scene, cs381::Entity player, cs381::Entity boss, BossPhase& phase){
 
+    //std::cout << (int)player << std::endl;
+
+    if(!(scene.HasComponent<Boss>(boss))) return;
+
+    if(!(scene.HasComponent<Player>(player))) return; 
+    if(!(scene.HasComponent<Ship>(boss))) return;
+
+    if(!(scene.HasComponent<Physics3D>(player))) return; 
+    if(!(scene.HasComponent<Physics3D>(boss))) return; 
+
+    if(!(scene.HasComponent<Transforming>(boss))) return; 
+    if(!(scene.HasComponent<Transforming>(player))) return;
+
+    if(!(scene.HasComponent<Rendering>(boss))) return;
+
+    auto& playerTransform = scene.GetComponent<Transforming>(player);
+    auto& bossTransform = scene.GetComponent<Transforming>(boss);
+    auto& bossShip = scene.GetComponent<Ship>(boss);
+    auto& bossRender = scene.GetComponent<Rendering>(boss);
+
+    if(phase == idle){
+     if(playerTransform.position.x <= bossTransform.position.x){
+        std::cout << "Encountered boss" << std::endl;
+        bossTransform.velocity.x = -150.0f;
+        bossShip.targetHealth = 1.0f;
+        phase = speeding;
+     }
+    }
+    if(phase == speeding){
+        std::cout << "speeding" << std::endl;
+        //bossTransform.velocity = raylib::Vector3{-150, 0, 0};
+        if(playerTransform.position.x <= -5000){
+            phase = offscreen;
+            auto& playerPhysics = scene.GetComponent<Physics3D>(player);
+            auto& bossPhysics = scene.GetComponent<Physics3D>(boss);
+
+            bossPhysics.quat = playerPhysics.quat;
+
+            bossTransform.position = raylib::Vector3{(playerTransform.position.x - 500.0f), 0, 0};
+            bossTransform.velocity.x = 0.0f;
+            bossShip.targetHealth = 300.0f;
+            bossRender.model->transform = raylib::Transform(bossRender.model->transform).RotateY(raylib::Degree(180));
+        } 
+    }
+
+    if(phase == offscreen){
+        std::cout << "offscreen" << std::endl;
+        
+        if(GetWorldToScreen(bossTransform.position, (*(bossRender.camera))).x < (*(bossRender.window)).GetWidth() - 100){
+            //std::cout << "on screen" << std::endl;    
+            phase = ready;
+            scene.GetComponent<Boss>(boss).fightStarted = true;
+            bossTransform.velocity.x = -50.0f;
+        }
+    }
+    
+    if(phase == ready){
+        auto& playerPhysics = scene.GetComponent<Physics3D>(player);
+        auto& bossPhysics = scene.GetComponent<Physics3D>(boss);
+
+        float dif = (playerTransform.position.y) - (bossTransform.position.y);
+        bossTransform.position.y += dif * (*(bossRender.window)).GetFrameTime();
+        bossPhysics.roll = playerPhysics.roll;
+
+        std::cout << bossShip.targetLaserBar << std::endl;
+         if(!(bossShip.targetLaserBar < 300.0f)){
+         bossShip.drawLaser = true;
+         (*(bossRender.laser)).Play(); 
+         bossShip.targetLaserBar = 0;
+        }
+
+        if(bossShip.shipHealth <= 0.0f){
+         phase = destroyed;
+         bossRender.invisible = true;
+        }
+
+
+
+        //if(CheckCollisionBoxSphere(rendering.model->GetTransformedBoundingBox(), ship.shipLaserPosition, 20.0f) && ship.drawLaser){
+
+        
+    }
 }
 
 
@@ -888,6 +1066,7 @@ mainScene.AddComponent<Transforming>(bossEntity);
 mainScene.AddComponent<Rendering>(bossEntity);
 mainScene.AddComponent<Physics3D>(bossEntity);
 mainScene.AddComponent<Ship>(bossEntity);
+mainScene.AddComponent<Boss>(bossEntity);
 
 
 mainScene.GetComponent<Transforming>(bossEntity).position = raylib::Vector3{-4600, 0, 50};
@@ -900,19 +1079,27 @@ mainScene.GetComponent<Rendering>(bossEntity).laser = &laser;
 mainScene.GetComponent<Rendering>(bossEntity).ping = &ping;
 mainScene.GetComponent<Physics3D>(bossEntity).roll = 30.0f;
 
-// mainScene.GetComponent<Ship>(bossEntity).targetLaserBar = 300.0f;
-// mainScene.GetComponent<Ship>(bossEntity).targetHealth = 300.0f;
-// mainScene.GetComponent<Ship>(bossEntity).shipHealth = 300.0f;
-// mainScene.GetComponent<Ship>(bossEntity).targetBeamPos = 0.0f; 
-// mainScene.GetComponent<Ship>(bossEntity).drawLaser = false;
+mainScene.GetComponent<Ship>(bossEntity).targetLaserBar = 300.0f;
+mainScene.GetComponent<Ship>(bossEntity).targetHealth = 300.0f;
+mainScene.GetComponent<Ship>(bossEntity).shipHealth = 300.0f;
+mainScene.GetComponent<Ship>(bossEntity).targetBeamPos = 0.0f; 
+mainScene.GetComponent<Ship>(bossEntity).drawLaser = false;
+mainScene.GetComponent<Ship>(bossEntity).invul = false;
+mainScene.GetComponent<Ship>(bossEntity).invulMeter = 0.0f;
+
+mainScene.GetComponent<Boss>(bossEntity).fightStarted = false;
 //mainScene.GetComponent<Ship>(bossEntity).isBoss = true;
 
+mainScene.GetComponent<Player>(player).bossReference = &(mainScene.GetComponent<Ship>(bossEntity));
 
-StateMachine state;
-state = titleScreen;
-std::cout << state << std::endl;
+StateMachine state = titleScreen;
+BossPhase phase = idle;
+
 
 float wait = 0.0f;
+float musicVal = 0.5f;
+raylib::Vector3 playerPosition = {0,0,0};
+music.SetVolume(musicVal);
 
 InitializeBuffer(mainScene);
 
@@ -936,7 +1123,7 @@ switch(state){
     //window.EndDrawing();
     //}
 
-    TrackGameState(mainScene, player, state);
+    TrackGameState(mainScene, player, playerPosition, state, phase);
     break;
 
     case StateMachine::mainLevel : 
@@ -949,7 +1136,7 @@ switch(state){
      
      music.Play();
      music.Update();
-     TrackGameState(mainScene, player, state);
+     TrackGameState(mainScene, player, playerPosition, state, phase);
      UpdatePlayer(mainScene, player, window.GetFrameTime());
      UpdateShipProperties(mainScene, window.GetFrameTime());
      UpdateShipReference(mainScene);
@@ -961,7 +1148,7 @@ switch(state){
 	camera.EndMode();
 
     //DRAW HUD 
-    DisplayShipHUD(mainScene, player, &text, &window);
+    DisplayShipHUD(mainScene, player, &text, &window, 30);
 
     DrawFPS(10, 10);
     inputs.PollEvents();
@@ -986,7 +1173,7 @@ switch(state){
     }
     camera.EndMode();
 
-    DisplayShipHUD(mainScene, player, &text, &window);
+    DisplayShipHUD(mainScene, player, &text, &window, 30);
     DrawFPS(10, 10);
 
     break;
@@ -1000,13 +1187,26 @@ switch(state){
     camera.BeginMode();
     {
      
-     music.Play();
-     music.Update();
-     TrackGameState(mainScene, player, state);
+     if(phase != BossPhase::idle){
+      boss.Play();
+      boss.Update();
+     }
+     else{
+      if(musicVal > 0.0f){
+       musicVal -= 0.5*window.GetFrameTime();
+      }
+
+      music.SetVolume(musicVal);
+      music.Play();
+      music.Update();
+     }
+
+     TrackGameState(mainScene, player, playerPosition, state, phase);
      UpdatePlayer(mainScene, player, window.GetFrameTime());
      UpdateShipProperties(mainScene, window.GetFrameTime());
      UpdateShipReference(mainScene);
      ApplyPhysics(mainScene, window.GetFrameTime());
+     UpdateBossAI(mainScene, player, bossEntity, phase);
      skybox.Draw();
      Draw(mainScene, state, window.GetFrameTime());
      
@@ -1014,11 +1214,51 @@ switch(state){
 	camera.EndMode();
 
     //DRAW HUD 
-    DisplayShipHUD(mainScene, player, &text, &window);
+    DisplayShipHUD(mainScene, player, &text, &window, 30);
+    if(phase == offscreen || phase == ready){
+     DisplayShipHUD(mainScene, bossEntity, &text, &window, window.GetWidth() - 400);
+    }
 
     DrawFPS(10, 10);
     inputs.PollEvents();
     
+    break;
+
+    case StateMachine::victory :
+    
+    if(wait <= 46.0f) wait += 5*window.GetFrameTime();
+    if(wait > 10.0f){
+    
+    vict.Play();
+    vict.Update();
+
+    }
+
+    camera.BeginMode();
+    {
+    
+    TrackGameState(mainScene, player, playerPosition, state, phase);
+    skybox.Draw();
+    ApplyPhysics(mainScene, window.GetFrameTime());
+    Draw(mainScene, state, window.GetFrameTime());
+    
+
+    camera.target = (raylib::Vector3)camera.target + (((raylib::Vector3)playerPosition - (raylib::Vector3)camera.target) * window.GetFrameTime());
+    if(camera.fovy >= 30.0f){
+     camera.fovy -= 20*window.GetFrameTime();
+    }
+
+    }
+    camera.EndMode();
+    if(wait >= 15.0f) text.Draw("Returning to ",  30, 100, 100, raylib::Color::White());
+    if(wait >= 17.0f) text.Draw("base ",  30, 200, 100, raylib::Color::White());
+    if(wait >= 45.0f) camera.position = (raylib::Vector3)camera.position + cameraVelocity*window.GetFrameTime();
+        
+
+    
+
+    
+
     break;
 
 }

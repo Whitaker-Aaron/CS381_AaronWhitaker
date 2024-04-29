@@ -27,7 +27,7 @@ namespace cs381 {
 		std::vector<std::byte> data;
 
 		ComponentStorage() : elementSize(-1), data(1, std::byte{0}) {}
-		ComponentStorage(size_t elementSize) : elementSize(elementSize) { data.reserve(5 * elementSize); }
+		ComponentStorage(size_t elementSize) : elementSize(elementSize) { data.reserve(10 * elementSize); }
 		
 		template<typename Tcomponent>
 		ComponentStorage(Tcomponent reference = {}) : ComponentStorage(sizeof(Tcomponent)) {}
@@ -129,7 +129,7 @@ namespace cs381 {
 		std::vector<std::byte> data;
 
 		SkiplistComponentStorage() : elementSize(-1), indecies(1, -1), data(1, std::byte{0}) {}
-		SkiplistComponentStorage(size_t elementSize) : elementSize(elementSize) { data.reserve(5 * elementSize); }
+		SkiplistComponentStorage(size_t elementSize) : elementSize(elementSize) { data.reserve(10 * elementSize); }
 		
 		template<typename Tcomponent>
 		SkiplistComponentStorage(Tcomponent reference = {}) : SkiplistComponentStorage(sizeof(Tcomponent)) {}
@@ -137,7 +137,7 @@ namespace cs381 {
 		template<typename Tcomponent>
 		Tcomponent& Get(Entity e) {
 			assert(sizeof(Tcomponent) == elementSize);
-			assert(e < indecies.size());
+			assert(e <= indecies.size());
 			assert(indecies[e] != std::numeric_limits<size_t>::max());
 			return *(Tcomponent*)(data.data() + indecies[e]);
 		}
@@ -163,7 +163,7 @@ namespace cs381 {
 		Tcomponent& GetOrAllocate(Entity e) {
 			assert(sizeof(Tcomponent) == elementSize);
 			if (indecies.size() <= e)
-				indecies.insert(indecies.end(), std::max<int64_t>(int64_t(e) - indecies.size(), 1), -1);
+				indecies.insert(indecies.end(), std::max<int64_t>(int64_t(e) - indecies.size() + 1, 1), -1);
 			if (indecies[e] == std::numeric_limits<size_t>::max())
 				return Allocate<Tcomponent>(e);
 			return Get<Tcomponent>(e);
