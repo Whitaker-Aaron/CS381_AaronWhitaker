@@ -65,7 +65,15 @@ Description of Criteria:
     - There is a DisplayHUD system that draws player information to screen 
     - There is a GameState system that tracks the state of the game based on data of player 
     - There is a PlayerUpdate system that tracks movement every frame 
-    - There is an UpdateShip system that updates the ship's properties based on target variables, such as animating the ship's health and laser. 
+    - There is an UpdateShip system that updates the ship's properties based on target variables, such as animating the ship's health and laser.
+
+
+**Image Gallery** :
+
+  ![alttext](/as9/mdImages/Ship1.png)
+  ![alttext](/as9/mdImages/Ship2.png)
+  ![alttext](/as9/mdImages/Ship3.png)
+  ![alttext](/as9/mdImages/Ship5.png)
+  ![alttext](/as9/mdImages/Ship4.png)
     
    
-
