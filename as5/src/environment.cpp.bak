@@ -1,0 +1,272 @@
+
+//Assignment 8: 
+//Planes and ships that have different behavior 
+//How do we go from monolithic entity to 
+//Adhoc no arrays or list like structure
+-Good for simplistic code 
+
+//Entity component (object oriented)
+-Good for instantiation of multiple objects 
+-Good for abstraction
+
+//Monolithic entity
+-All data in one struct 
+-Good for data access 
+-Wasteful for resources
+
+//Data per entity would be larger if we have a large scope in OOEC
+//Accessing main memory takes longer than accessing a cache.
+//After our cache, we have to access our main memory.
+//What if we rearrange our data, so we can access all of our data in the cache by proximity rather than jump through each 
+  object.
+//Better for accessing.
+//Struct with arrays in it. Where each array is the corresponding attribute. 
+//Giving components entities. An entity is now an index into these arrays.
+//
+
+
+//NEED: #include <cassert>
+
+//using Entity = uint8_t;
+//1 byte = 256 entities;
+
+//Pool allocators:
+//Can only store one type of thing
+    struct ComponentStorage {
+        //Struct is just a bunch of bytes in data stored in proximity.
+        size_t elementSize = -1;
+
+
+        //Can take a buffer of just bytes.
+        std::vector<std::byte> data;
+
+        ComponentStorage() : elementSize(-1), data(1, std::byte{0});
+        ComponentStorage(size_t elementSize) : elementSize(elementSize) {data.resize(5*elementSize)};
+
+        template<typename Tcomponent>
+        ComponentStorage(Tcomponent reference = {}) : ComponentStorage(sizeof(Tcomponent)) {};
+
+        template<typename Tcomponent>
+        Tcomponent& Get(Entity e) {
+            //Asserts crash the program if bool returns false.
+            //Exceptions are really slow, so we are doing this instead.
+            //This is because we are running really fast code.
+            assert(sizeof(Tcomponent) == elementSize);
+
+            //Checking that this entity is in bounds of the struct.
+            //Going fast. Don't break everything.
+            assert(e < (data.size() / elementSize));
+
+            //.data() returns a pointer to a vectors interal pointer array.
+            //Indexing the eTH thing.
+            //Casting this to a Tcomponent* then derefence it to return it;
+            //This returns the entity.
+            //Incrementing through the bytes of the array in steps of the component size.
+
+            return *(Tcomponent*)(data.data() + e*elementSize);
+        }
+
+
+        //Checkpointing where the array originally ended. Insert elementSize by how many things we want. Set them all to 0
+        //We don't want all things to be 0. What if we have a constructor. For every element we just created room for,
+        // (new makes pointers. Placement new. If we call new as a function, we can pass it a pointer, and it will 
+        //  allocate the thing in the array.) We are going to create a new T component. We wrap things up as pointers to 
+            isolate our pointer work to the struct rather than the whole program.
+
+
+        template<typename Tcomponent>
+        std::pair<Tcomponent&, Entity> Allocate(size_t count = 1){
+            assert(sizeof(Tcomponent) == elementSize);
+
+            //Max amount of entities we can store with the integer. 255 because we start at 0.
+            assert(count < 255);
+            auto originalEnd = data.size();
+            data.insert(data.end(), elementSize*count, std::byte{0});
+                for(size_t i = 0; i < count - 1; i++ ){
+                    new(data.data() + originalEnd + i * elementSize) Tcomponent();
+                }
+
+                return{
+                    *new(data.data() + data.size() - elementSize) Tcomponent(), 
+                     data.size() / elementSize;
+                }
+                }
+
+
+        }
+
+        Tcomponent& GetOrAllocate(Entity e){
+            assert(sizeof(Tcomponent) == elementSize);
+            size_t size = data.size() / elementSize;
+                if(size <= e)
+                    Allocate<Tcomponent>(std::max<int64_t>(int64_t(e) - size, 1));
+                return Get<Tcomponent>(e);
+        }
+    };
+
+
+//Array of structures 
+//Structure of arrays 
+
+//Every time we load a new structure, we'll be able to put 10 in memory,
+//whereas if we have all of our positions next to each other,
+//we'll have to load a new line . 
+//What's wrong with a cache miss 
+//Have to go into main memory to find. 
+
+//Structure of arrays 
+//All of our positions are right next to each other rather than being 
+//a whole struct away from each other. 
+//This tweak is signficant because doing not otherwise can 
+//double our FPS.
+
+//Cache gets updated everytime we want information thats not in the cache 
+//Cache update everytime we access 
+//
+
+//We are switching from entity component architecture to data oriented 
+//system architecture. 
+
+//Structure of arrays and arrays of structures is data oriented. 
+//The entity of this system is the index. 
+//Systems that bulkhead on components and implement behavior. 
+//
+//Implement a new idea: Scenes 
+
+
+//What is an extern?
+//Variable is declared in another .o file.
+//Create new file : counter.cpp where 
+//#include <cstddef>
+//size_t globalComponentCounter = 0;
+
+//Anywhere else we use this program is a 0.
+//Global variable declared in header file. Included in multiple files, 
+//don't know which one we are talking about. 
+//Static makes a global variable that can only be accessed in this specific function 
+//Templates make stamp outs of the function. Every template gets their own global variable id. 
+//The other thing about a static, is that the first time a function gets called, 
+//the static declaration gets skipped after the FIRST call. 
+//
+
+extern size_t globalComponentCounter;
+template<typename T>
+size_t GetComponentID(T reference = {}) { 
+    //Post increment global component counter
+    //Next template, the id will increment because templates override 
+    //the static function. 
+    //Gets component id because of the way static variables work. 
+    //Depends on the way the functions are called.
+    static size_t id = globalComponentCounter++;
+    return id;
+}
+
+//Maps a type to an integer that won't change during the run of the program.
+GetComponent::<int>()
+GetComponent::<Transform>()
+
+struct Scene { 
+
+    //Behind the scenes it is an integer, where each bit is cut off to represent the bool.
+    std::vector<std::vector<bool>> entityMasks; 
+    std::vector<ComponentStorage> storages = {ComponentStorage()};
+
+    template<typename Tcomponent> 
+    ComponentStorage& GetStorage(){
+        size_t id = GetComponentID<Tcomponent>(); 
+        if(storages.size() <= id)
+            storages.insert(storages.cend(), std::max<int64_t>() )
+        
+        if(storages[id].elementSize == std::numeric_limits<size_t>::max()){
+            storages[id] = ComponentStorage(Tcomponent{});
+        }
+
+        return storages[id];
+    }
+
+
+    Entity CreateEntity() {
+        //A mask is a bunch of true/false switches for something. 
+        //This mask tells us which components they have. 
+        //
+        Entity e = entityMasks.size(); 
+        entityMasks.emplace_back(std::vector<bool>{false});
+        return e;
+    }
+
+    template<typename Tcomponent>
+    Tcomponent& AddComponent(Entity e){
+        size_t id = GetComponentID<Tcomponent>();
+        auto& eMask = entityMask[e]; 
+        if(eMask.size() <= id){
+            emask.resize(id + 1, false);
+        eMask[id] = true;
+        return GetStorage<Tcomponent>().template GetOrAllocate<Tcomponent>(e);
+        } 
+    }
+
+    template<typename Tcomponent> 
+    Tcomponent& GetComponent(Entity e){
+        size_t id = GetComponentID<Tcomponent>();
+        assert(entityMasks[e][id]);
+        return GetStorage<Tcomponent>().template Get<Tcomponent>(e);
+    }
+
+    template<typename Tcomponent>
+    bool HasComponent(Entity e){
+        size_t id = GetComponentID<Tcomponent>();
+        return entityMasks.size() > e && entityMasks[e.size() > id && entityMasks[e][id]];
+    }
+};
+
+//Our scene is that big struct. The struct that houses our arrays.
+//Our system batchworks on a set of components
+
+//The scene is what is storing the data for all of our components.
+void Draw(Scene& scene){
+    for(Entity e = 0; e < scene.entityMasks.size(); e++)
+        if(!scene.HasComponent<Rendering>(e)) continue; 
+
+        auto& rendering = scene.GetComponent<Rendering>(e);
+        raylib::Transform backupTransform = rendering.model->transform;
+        rendering.model->transform = transformer(backupTransform);
+        rendering.model->Draw({});
+        rendering.model->transform = backupTransform;
+}
+
+//Concurrency vs. Parallelism vs. Parallel Execution 
+
+//Concurrency: 
+//1 core cpu lol 
+//Two threads, red and blue 
+//Do a bit of red task, cache miss go to main memory and work on blue thread
+//Constant context switching. 
+//At any given point in time, the CPU is doing exactly one thing. 
+//When the scale is one microsecond, it looks like separated,
+//but we are switching so fast that it doesn't seem that way. 
+
+//Parallel Execution: 
+//Threading(?)
+//Multiple CPU cores 
+//The number of threads running is the number of cores on the CPU. 
+//Difference between a core and a thread
+//Threads are fake; used to emulate concurrency/parallel execution. 
+
+//Concurrent Parallel Execution: 
+//Concurrency and parallel execution is happening at the same time. 
+//
+
+//Parallelism: 
+//We branch/fork from the initial process/task to join back up. 
+//One task runs from one thread on a CPU core to multiple threads 
+//on multiple cores.  
+
+//Physics 2D and Physics 3D 
+//Once all the physics have happenened we need to render. 
+//So we fork to do our translations, then join to render. 
+//
+
+//BUSINESS SIDE: 
+
+//Not always going to be working with technical people.
+//

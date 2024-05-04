@@ -7,6 +7,7 @@
 #include <concepts>
 #include "delegate.hpp"
 #include <BufferedInput.hpp>
+#include <ranges>
 #define GUI_VOLUMECONTROL_IMPLEMENTATION
 
 //#include "raygui.cpp"
@@ -136,6 +137,8 @@ PingButton += []() {
 raylib::Window window(300, 350, "CS381 - Assignment 5");
 raylib::Text text;
 int windHeight = 0, windWidth = 0;
+
+
 raylib::BufferedInput inputs;
 
 inputs["ping"] = raylib::Action::key(KEY_SPACE).SetPressedCallback([]{
@@ -194,9 +197,9 @@ while(!window.ShouldClose()) {
     crowd.Play();
     crowd.Update();
 
-    ping.SetVolume(guiState.SFXSliderValue);
-    music.SetVolume(guiState.MusicSliderValue);
-    crowd.SetVolume(guiState.DialogueSliderValue);
+    ping.SetVolume(guiState.SFXSliderValue / (float)100.0f);
+    music.SetVolume(guiState.MusicSliderValue / (float)100.0f);
+    crowd.SetVolume(guiState.DialogueSliderValue / (float)100.0f);
 
     if(IsKeyDown(KEY_RIGHT)){
         switch(currentSlider){
