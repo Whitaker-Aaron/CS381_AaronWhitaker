@@ -1,0 +1,128 @@
+[gd_scene load_steps=7 format=3 uid="uid://beg07kxkwck0i"]
+
+[ext_resource type="Script" path="res://RemoteLabel.gd" id="1_73hyh"]
+[ext_resource type="Script" path="res://HostScript.gd" id="2_d0pt0"]
+[ext_resource type="Script" path="res://PeerScript.gd" id="3_nyv6o"]
+[ext_resource type="Script" path="res://Networking.gd" id="4_ndof8"]
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_fakwi"]
+properties/0/path = NodePath(".:text")
+properties/0/spawn = true
+properties/0/replication_mode = 2
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_0fttk"]
+properties/0/path = NodePath(".:text")
+properties/0/spawn = true
+properties/0/replication_mode = 2
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Game" type="Control" parent="."]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Label" type="Label" parent="Game"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 28.838
+anchor_bottom = 16.203
+offset_right = 4.47998
+offset_bottom = 9.87994
+text = "Counter: 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+script = ExtResource("1_73hyh")
+
+[node name="IncrementButton" type="Button" parent="Game"]
+layout_mode = 0
+offset_left = 409.0
+offset_top = 250.0
+offset_right = 545.0
+offset_bottom = 281.0
+text = "Increment Value"
+
+[node name="DecrementButton" type="Button" parent="Game"]
+layout_mode = 0
+offset_left = 608.0
+offset_top = 249.0
+offset_right = 750.0
+offset_bottom = 280.0
+text = "Decrement Value"
+
+[node name="Player1ID" type="Label" parent="Game"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 28.66
+anchor_bottom = 15.787
+offset_left = 17.0
+offset_top = 487.0
+offset_right = -881.4
+offset_bottom = -121.48
+text = "Host ID:"
+script = ExtResource("2_d0pt0")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="Game/Player1ID"]
+replication_config = SubResource("SceneReplicationConfig_fakwi")
+
+[node name="Player2ID" type="Label" parent="Game"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 28.66
+anchor_bottom = 15.787
+offset_left = 15.0
+offset_top = 520.0
+offset_right = -883.4
+offset_bottom = -88.48
+script = ExtResource("3_nyv6o")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="Game/Player2ID"]
+replication_config = SubResource("SceneReplicationConfig_0fttk")
+
+[node name="HostMenu" type="Control" parent="."]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("4_ndof8")
+
+[node name="PanelContainer" type="PanelContainer" parent="HostMenu"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 28.75
+anchor_bottom = 16.25
+offset_right = -6.00012
+offset_bottom = -7.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HostMenu/PanelContainer"]
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="HostMenu/PanelContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HostButton" type="Button" parent="HostMenu/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Host"
+
+[node name="IPAddress" type="LineEdit" parent="HostMenu/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "localhost"
+
+[node name="JoinButton" type="Button" parent="HostMenu/PanelContainer/VBoxContainer"]
+layout_mode = 2
+text = "Join"
+
+[node name="Spacer2" type="Control" parent="HostMenu/PanelContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[connection signal="pressed" from="Game/IncrementButton" to="Game/Label" method="_on_increment_button_pressed"]
+[connection signal="pressed" from="Game/DecrementButton" to="Game/Label" method="_on_decrement_button_pressed"]
+[connection signal="pressed" from="HostMenu/PanelContainer/VBoxContainer/HostButton" to="HostMenu" method="_on_host_button_pressed"]
+[connection signal="pressed" from="HostMenu/PanelContainer/VBoxContainer/JoinButton" to="HostMenu" method="_on_join_button_pressed"]
